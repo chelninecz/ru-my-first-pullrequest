@@ -2,15 +2,28 @@ import pandas as pd
 import glob
 import os
 
-def merge_excel_files(input_pattern, output_file, sheet_name='Sheet1'):
+# Конфигурация
+NETWORK_PATH = r"\\10.16.130.100\WMFactory\QA_DPT"
+OUTPUT_FILE = "merged_result.xlsx"
+SHEET_NAME = 0  # Можно указать имя листа (например, 'Sheet1') или 0 для первого листа
+FILE_PATTERN = "*.xlsx"  # Шаблон поиска файлов
+
+def merge_excel_files(input_pattern, output_file, sheet_name=0):
     """
     Объединяет несколько Excel файлов в один.
     
     Параметры:
-    - input_pattern: шаблон пути к файлам (например, 'data/*.xlsx' или 'file_*.xlsx')
+    - input_pattern: шаблон пути к файлам (например, '//server/share/*.xlsx')
     - output_file: имя выходного файла
-    - sheet_name: имя листа для чтения (по умолчанию 'Sheet1')
+    - sheet_name: имя или индекс листа для чтения
     """
+    # Проверка доступности пути
+    base_dir = os.path.dirname(input_pattern)
+    if base_dir and not os.path.exists(base_dir):
+        print(f"Ошибка: Путь '{base_dir}' недоступен.")
+        print("Проверьте подключение к сети и права доступа.")
+        return
+
     # Получаем список файлов по шаблону
     files = glob.glob(input_pattern)
     
@@ -26,7 +39,7 @@ def merge_excel_files(input_pattern, output_file, sheet_name='Sheet1'):
         try:
             df = pd.read_excel(file, sheet_name=sheet_name)
             dataframes.append(df)
-            print(f"Прочитан файл: {file} ({len(df)} строк)")
+            print(f"Прочитан файл: {os.path.basename(file)} ({len(df)} строк)")
         except Exception as e:
             print(f"Ошибка при чтении {file}: {e}")
     
@@ -42,17 +55,8 @@ def merge_excel_files(input_pattern, output_file, sheet_name='Sheet1'):
     print(f"Данные успешно сохранены в {output_file} (всего строк: {len(merged_df)})")
 
 if __name__ == "__main__":
-    # Пример использования:
-    # 1. Положите исходные файлы в папку 'input_files'
-    # 2. Запустите скрипт
+    # Формируем полный путь к файлам на сетевом диске
+    input_path = os.path.join(NETWORK_PATH, FILE_PATTERN)
     
-    # Шаблон для поиска всех .xlsx файлов в папке input_files
-    input_path = "input_files/*.xlsx"
-    output_path = "merged_result.xlsx"
-    
-    # Создайте папку для примера, если её нет (опционально)
-    if not os.path.exists("input_files"):
-        os.makedirs("input_files")
-        print("Папка 'input_files' создана. Поместите туда ваши Excel файлы.")
-    
-    merge_excel_files(input_path, output_path)
+    print(f"Поиск файлов по адресу: {input_path}")
+    merge_excel_files(input_path, OUTPUT_FILE, sheet_name=SHEET_NAME)
